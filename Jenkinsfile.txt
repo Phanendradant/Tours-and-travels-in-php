@@ -9,6 +9,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
+                    sh "./docker.sh"
                     dockerImage = docker.build("tours-travels-app:${env.BUILD_ID}")
                 }
             }
