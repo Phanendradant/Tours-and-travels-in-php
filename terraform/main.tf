@@ -61,7 +61,7 @@ resource "aws_route_table_association" "public_rt_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-# EKS Cluster Setup with Worker Groups
+# EKS Cluster Setup with Correct Worker Groups Definition
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
   version         = "17.1.0"
@@ -70,14 +70,15 @@ module "eks" {
   vpc_id          = aws_vpc.main_vpc.id
   subnets         = [aws_subnet.public_subnet.id, aws_subnet.private_subnet.id]
 
-  worker_groups = {
-    eks_nodes = {
+  worker_groups = [
+    {
+      name                 = "eks_nodes"
       instance_type        = "t3.medium"
       asg_desired_capacity = 2
       asg_min_size         = 1
       asg_max_size         = 3
     }
-  }
+  ]
 
   tags = {
     Environment = "production"
