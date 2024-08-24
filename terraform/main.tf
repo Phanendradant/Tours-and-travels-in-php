@@ -13,10 +13,10 @@ resource "aws_vpc" "main_vpc" {
   }
 }
 
-# Subnets
+# Public Subnet
 resource "aws_subnet" "public_subnet" {
-  vpc_id     = aws_vpc.main_vpc.id
-  cidr_block = "10.0.1.0/24"
+  vpc_id                  = aws_vpc.main_vpc.id
+  cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
 
   tags = {
@@ -24,6 +24,7 @@ resource "aws_subnet" "public_subnet" {
   }
 }
 
+# Private Subnet
 resource "aws_subnet" "private_subnet" {
   vpc_id     = aws_vpc.main_vpc.id
   cidr_block = "10.0.2.0/24"
@@ -42,7 +43,7 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-# Route Tables
+# Route Table for Public Subnet
 resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.main_vpc.id
 
@@ -61,7 +62,45 @@ resource "aws_route_table_association" "public_rt_assoc" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-# EKS Cluster Setup with Correct Worker Groups Definition
+# IAM Role for EKS Workers
+resource "aws_iam_role" "eks_worker_role" {
+  name = "eks_worker_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+
+  tags = {
+    Name = "eks_worker_role"
+  }
+}
+
+# Attach Policies to IAM Role
+resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
+  role       = aws_iam_role.eks_worker_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
+  role       = aws_iam_role.eks_worker_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_container_registry_policy" {
+  role       = aws_iam_role.eks_worker_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+# EKS Cluster Setup with Worker Groups
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
   version         = "17.1.0"
@@ -77,46 +116,12 @@ module "eks" {
       asg_desired_capacity = 2
       asg_min_size         = 1
       asg_max_size         = 3
+      iam_role_name        = aws_iam_role.eks_worker_role.name
     }
   ]
 
   tags = {
     Environment = "production"
     Project     = "my-project"
-  }
-}
-
-# Security Group for EC2
-resource "aws_security_group" "ec2_sg" {
-  vpc_id = aws_vpc.main_vpc.id
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "ec2_security_group"
-  }
-}
-
-# EC2 Instance
-resource "aws_instance" "web" {
-  ami           = "ami-0c55b159cbfafe1f0"  # Amazon Linux 2 AMI (change as needed)
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.public_subnet.id
-  security_groups = [aws_security_group.ec2_sg.name]
-
-  tags = {
-    Name = "web_instance"
   }
 }
