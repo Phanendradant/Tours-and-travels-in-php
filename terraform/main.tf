@@ -175,3 +175,18 @@ data "aws_eks_cluster_auth" "main" {
   name = module.eks.cluster_id
 }
 
+
+resource "aws_ecr_repository" "tours_and_travels" {
+  name                 = "Tours-and-travels-in-php"
+  image_tag_mutability = "MUTABLE"
+
+  tags = {
+    Name        = "Tours-and-travels-in-php"
+    Environment = "production"
+  }
+}
+
+output "ecr_repository_url" {
+  value = aws_ecr_repository.tours_and_travels.repository_url
+  description = "URL of the ECR repository"
+}
