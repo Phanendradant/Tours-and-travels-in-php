@@ -1,34 +1,29 @@
+
 pipeline {
     agent any
+    environment {
+        AWS_REGION = 'us-west-2'
+    }
     stages {
-        stage('Clone Repository') {
+        stage('Build') {
             steps {
-                git 'https://github.com/projectworldsofficial/Tours-and-travels-in-php'
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh "./docker.sh"
-                    dockerImage = docker.build("tours-travels-app:${env.BUILD_ID}")
-                }
+                sh 'docker build -t tours-travels-app .'
             }
         }
         stage('Push to ECR') {
             steps {
-                script {
-                    docker.withRegistry("https://<aws_account_id>.dkr.ecr.us-west-2.amazonaws.com", "ecr:us-west-2:aws") {
-                        dockerImage.push('latest')
-                    }
-                }
+                sh '''
+                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com
+                docker tag tours-travels-app:latest <aws_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com/tours-travels-app:latest
+                docker push <aws_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com/tours-travels-app:latest
+                '''
             }
         }
         stage('Deploy to EKS') {
             steps {
-                script {
-                    sh 'helm upgrade --install tours-travels-app ./tours-travels-chart --set image.tag=latest'
-                }
+                sh 'helm upgrade --install tours-travels-app ./mychart --set image.tag=latest'
             }
         }
     }
 }
+
