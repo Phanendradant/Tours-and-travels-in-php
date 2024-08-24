@@ -1,3 +1,4 @@
+
 provider "aws" {
   region = "us-west-2"
 }
@@ -16,7 +17,7 @@ resource "aws_vpc" "main_vpc" {
 # Public Subnet in AZ1
 resource "aws_subnet" "public_subnet_az1" {
   vpc_id                  = aws_vpc.main_vpc.id
-  cidr_block              = "10.0.10.0/24"  # Updated CIDR block
+  cidr_block              = "10.0.10.0/24"
   availability_zone       = "us-west-2a"
   map_public_ip_on_launch = true
 
@@ -28,7 +29,7 @@ resource "aws_subnet" "public_subnet_az1" {
 # Public Subnet in AZ2
 resource "aws_subnet" "public_subnet_az2" {
   vpc_id                  = aws_vpc.main_vpc.id
-  cidr_block              = "10.0.20.0/24"  # Updated CIDR block
+  cidr_block              = "10.0.20.0/24"
   availability_zone       = "us-west-2b"
   map_public_ip_on_launch = true
 
@@ -40,7 +41,7 @@ resource "aws_subnet" "public_subnet_az2" {
 # Private Subnet in AZ1
 resource "aws_subnet" "private_subnet_az1" {
   vpc_id            = aws_vpc.main_vpc.id
-  cidr_block        = "10.0.30.0/24"  # Updated CIDR block
+  cidr_block        = "10.0.30.0/24"
   availability_zone = "us-west-2a"
 
   tags = {
@@ -51,7 +52,7 @@ resource "aws_subnet" "private_subnet_az1" {
 # Private Subnet in AZ2
 resource "aws_subnet" "private_subnet_az2" {
   vpc_id            = aws_vpc.main_vpc.id
-  cidr_block        = "10.0.40.0/24"  # Updated CIDR block
+  cidr_block        = "10.0.40.0/24"
   availability_zone = "us-west-2b"
 
   tags = {
@@ -90,6 +91,109 @@ resource "aws_route_table_association" "public_rt_assoc_az1" {
 resource "aws_route_table_association" "public_rt_assoc_az2" {
   subnet_id      = aws_subnet.public_subnet_az2.id
   route_table_id = aws_route_table.public_rt.id
+}
+
+# Security Group for CI/CD Instance
+resource "aws_security_group" "ci_cd_sg" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "ci_cd_sg"
+  }
+}
+
+# EC2 Instance for Jenkins, Docker, and kubectl
+resource "aws_instance" "ci_cd_instance" {
+  ami                    = "ami-0c55b159cbfafe1f0"  # Use the appropriate Ubuntu AMI
+  instance_type          = "t3.medium"
+  subnet_id              = aws_subnet.public_subnet_az1.id  # Replace with your subnet
+  security_group_ids     = [aws_security_group.ci_cd_sg.id]
+  associate_public_ip_address = true
+
+  # User data script to install Jenkins, Docker, and kubectl
+  user_data = <<-EOF
+    #!/bin/bash
+
+# Update and upgrade the instance
+sudo apt-get update -y
+sudo apt-get upgrade -y
+
+# Install Docker
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get update -y
+sudo apt-get install -y docker-ce
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker ubuntu
+
+# Install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+# Install Jenkins
+curl -fsSL https://pkg.jenkins.io/debian/jenkins.io.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/ | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt-get update -y
+sudo apt-get install -y jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+# Add Jenkins user to Docker group
+sudo usermod -aG docker jenkins
+
+# Install necessary Jenkins plugins (optional)
+sudo su - jenkins -s /bin/bash -c "curl -L https://get.jenkins.io/war-stable/2.332.2/jenkins.war -o /var/lib/jenkins/jenkins.war"
+sudo su - jenkins -s /bin/bash -c "java -jar /var/lib/jenkins/jenkins.war --httpPort=8080 &"
+
+# Open necessary ports for Jenkins and Docker
+sudo ufw allow 8080  # Jenkins
+sudo ufw allow 2376  # Docker
+sudo ufw enable
+
+# Clone your repository and set up Jenkins job (manual steps may be required)
+# Note: Replace the following repository URL with your actual repository
+cd /var/lib/jenkins
+git clone https://github.com/Phanendradant/Tours-and-travels-in-php.git
+
+# Example to add a Jenkins job via Jenkins CLI or by configuring through the Jenkins UI:
+# You can configure a Jenkins job manually via the UI to build and deploy the Docker image using the Dockerfile.
+
+  EOF
+
+  tags = {
+    Name = "CI_CD_Server"
+  }
 }
 
 # IAM Role for EKS Workers
@@ -175,9 +279,9 @@ data "aws_eks_cluster_auth" "main" {
   name = module.eks.cluster_id
 }
 
-
+# ECR Repository
 resource "aws_ecr_repository" "tours_and_travels" {
-  name                 = "tours-and-travels-in-php"  # Valid name with all lowercase letters
+  name                 = "tours-and-travels-in-php"
   image_tag_mutability = "MUTABLE"
 
   tags = {
