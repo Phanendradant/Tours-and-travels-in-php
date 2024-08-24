@@ -1,5 +1,7 @@
   # User data script to install Jenkins, Docker, Helm, Prometheus, Grafana and kubectl
     #!/bin/bash
+sudo apt install git -y
+git clone https://github.com/Phanendradant/Tours-and-travels-in-php.git
 # Update and upgrade the instance
 sudo apt-get update -y
 sudo apt-get upgrade -y
