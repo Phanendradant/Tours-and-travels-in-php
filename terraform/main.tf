@@ -138,7 +138,7 @@ resource "aws_instance" "ci_cd_instance" {
   security_group_ids     = [aws_security_group.ci_cd_sg.id]
   associate_public_ip_address = true
 
-  # User data script to install Jenkins, Docker, and kubectl
+  # User data script to install Jenkins, Docker, Helm, Prometheus, Grafana and kubectl
   user_data = <<-EOF
     #!/bin/bash
 
@@ -188,6 +188,38 @@ git clone https://github.com/Phanendradant/Tours-and-travels-in-php.git
 
 # Example to add a Jenkins job via Jenkins CLI or by configuring through the Jenkins UI:
 # You can configure a Jenkins job manually via the UI to build and deploy the Docker image using the Dockerfile.
+
+# Install Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Add Helm repositories for Prometheus and Grafana
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+# Install Prometheus using Helm
+kubectl create namespace monitoring
+helm install prometheus prometheus-community/prometheus --namespace monitoring
+
+# Install Grafana using Helm
+helm install grafana grafana/grafana --namespace monitoring
+
+# Wait for Grafana to be ready and get the admin password
+echo "Waiting for Grafana to be ready..."
+sleep 120  # Wait for Grafana to initialize (adjust time as needed)
+
+# Get Grafana admin password
+grafana_admin_password=$(kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
+echo "Grafana admin password: $grafana_admin_password"
+
+# Forward Grafana port to access the UI
+kubectl port-forward --namespace monitoring svc/grafana 3000:80 &
+echo "Grafana is available at http://localhost:3000"
+
+# Open necessary ports for Grafana and Prometheus
+sudo ufw allow 3000  # Grafana
+sudo ufw allow 9090  # Prometheus
+sudo ufw enable
 
   EOF
 
