@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
     environment {
@@ -7,20 +6,16 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'sudo usermod -aG docker $USER'
-                sh 'newgrp docker'
-                sh 'newgrp docker'
-                sh 'sudo -S usermod -aG docker jenkins'
-                sh 'docker build -t tours-travels-app .'
+                sh 'sudo docker build -t tours-travels-app .'
             }
         }
         stage('Push to ECR') {
             steps {
                 sh '''
-                aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 867344437404.dkr.ecr.us-west-2.amazonaws.com
-                docker build -t tours-and-travels-in-php .
-                docker tag tours-and-travels-in-php:latest 867344437404.dkr.ecr.us-west-2.amazonaws.com/tours-and-travels-in-php:latest
-                docker push 867344437404.dkr.ecr.us-west-2.amazonaws.com/tours-and-travels-in-php:latest
+                aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS --password-stdin 867344437404.dkr.ecr.us-west-2.amazonaws.com
+                sudo docker build -t tours-and-travels-in-php .
+                sudo docker tag tours-and-travels-in-php:latest 867344437404.dkr.ecr.us-west-2.amazonaws.com/tours-and-travels-in-php:latest
+                sudo docker push 867344437404.dkr.ecr.us-west-2.amazonaws.com/tours-and-travels-in-php:latest
                 '''
             }
         }
@@ -31,4 +26,3 @@ pipeline {
         }
     }
 }
-
