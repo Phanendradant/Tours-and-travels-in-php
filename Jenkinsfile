@@ -8,9 +8,10 @@ pipeline {
     stages {
         stage('Setup Environment') {
             steps {
+                // Run the commands with sudo, and use -S to supply the password if needed
                 sh '''
-                 apt-get update
-                 apt-get install -y awscli
+                echo "jenkins_password" | sudo -S apt-get update
+                echo "jenkins_password" | sudo -S apt-get install -y awscli
                 '''
             }
         }
