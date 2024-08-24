@@ -67,10 +67,11 @@ resource "aws_route_table_association" "public_rt_assoc" {
 # EKS Cluster Setup
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
+  version         = "17.1.0"  # Ensure to use the correct module version, update accordingly
   cluster_name    = "my-cluster"
   cluster_version = "1.21"
-  subnets         = [aws_subnet.public_subnet.id, aws_subnet.private_subnet.id]
   vpc_id          = aws_vpc.main_vpc.id
+  subnet_ids      = [aws_subnet.public_subnet.id, aws_subnet.private_subnet.id]
 
   node_groups = {
     eks_nodes = {
