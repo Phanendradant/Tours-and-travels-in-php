@@ -85,3 +85,38 @@ module "eks" {
     Project     = "my-project"
   }
 }
+
+# Security Group for EC2
+resource "aws_security_group" "ec2_sg" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "ec2_security_group"
+  }
+}
+
+# EC2 Instance
+resource "aws_instance" "web" {
+  ami           = "ami-0c55b159cbfafe1f0"  # Amazon Linux 2 AMI (change as needed)
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.public_subnet.id
+  security_groups = [aws_security_group.ec2_sg.name]
+
+  tags = {
+    Name = "web_instance"
+  }
+}
