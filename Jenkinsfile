@@ -10,6 +10,7 @@ pipeline {
                 sh 'sudo usermod -aG docker $USER'
                 sh 'newgrp docker'
                 sh 'newgrp docker'
+                sh 'sudo -S usermod -aG docker jenkins'
                 sh 'docker build -t tours-travels-app .'
             }
         }
