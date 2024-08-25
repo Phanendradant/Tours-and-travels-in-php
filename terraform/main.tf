@@ -166,6 +166,95 @@ resource "aws_iam_role_policy_attachment" "ec2_container_registry_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+# Security Group for CI/CD Instance
+resource "aws_security_group" "ci_cd_sg" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "ci_cd_sg"
+  }
+}
+
+# IAM Role for Jenkins Instance
+resource "aws_iam_role" "jenkins_iam_role" {
+  name = "jenkins_iam_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+
+  tags = {
+    Name = "jenkins_iam_role"
+  }
+}
+
+# IAM Policy Attachment for Jenkins Instance
+resource "aws_iam_role_policy_attachment" "jenkins_eks_access" {
+  role       = aws_iam_role.jenkins_iam_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "jenkins_ecr_access" {
+  role       = aws_iam_role.jenkins_iam_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+}
+
+resource "aws_iam_role_policy_attachment" "jenkins_s3_access" {
+  role       = aws_iam_role.jenkins_iam_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+# Associate the IAM Role with the Jenkins Instance
+resource "aws_iam_instance_profile" "jenkins_instance_profile" {
+  name = "jenkins_instance_profile"
+  role = aws_iam_role.jenkins_iam_role.name
+}
+
+# CI/CD Jenkins EC2 Instance
+resource "aws_instance" "ci_cd_instance" {
+  ami                    = "ami-05134c8ef96964280"  # Use the appropriate Ubuntu AMI
+  instance_type          = "t3.large"
+  subnet_id              = aws_subnet.public_subnet_az1.id
+  vpc_security_group_ids = [aws_security_group.ci_cd_sg.id]
+  associate_public_ip_address = true
+
+  iam_instance_profile   = aws_iam_instance_profile.jenkins_instance_profile.name
+
+  tags = {
+    Name = "CI_CD_Server"
+  }
+}
+
 # EKS Cluster Setup with Node Groups
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
