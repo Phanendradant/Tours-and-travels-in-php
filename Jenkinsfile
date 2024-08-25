@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWS_REGION = 'us-west-2'
-        KUBECONFIG = '/home/ubuntu/.kube/config' // Replace with the correct path to your kubeconfig
+        KUBECONFIG = '/home/ubuntu/.kube/config' // Ensure this path is correct and accessible
     }
     stages {
         stage('Setup Environment') {
@@ -38,9 +38,8 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 script {
-                    def kubeconfigPath = "/home/ubuntu/.kube/config" // Ensure this is correct and accessible
                     sh '''
-                    export KUBECONFIG=${kubeconfigPath}
+                    export KUBECONFIG=${KUBECONFIG}
                     kubectl config view
                     kubectl get nodes
                     helm upgrade --install tours-travels-app ./mychart --set image.tag=latest
