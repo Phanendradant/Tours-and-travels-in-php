@@ -92,16 +92,9 @@ resource "aws_route_table_association" "public_rt_assoc_az2" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-# Security Group for CI/CD Instance
-resource "aws_security_group" "ci_cd_sg" {
+# Security Group for EKS Nodes
+resource "aws_security_group" "eks_node_sg" {
   vpc_id = aws_vpc.main_vpc.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   ingress {
     from_port   = 22
@@ -111,15 +104,15 @@ resource "aws_security_group" "ci_cd_sg" {
   }
 
   ingress {
-    from_port   = 8081
-    to_port     = 8081
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = 10250
+    to_port     = 10250
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -132,71 +125,11 @@ resource "aws_security_group" "ci_cd_sg" {
   }
 
   tags = {
-    Name = "ci_cd_sg"
+    Name = "eks_node_sg"
   }
 }
 
-# IAM Role for Jenkins Instance
-resource "aws_iam_role" "jenkins_iam_role" {
-  name = "jenkins_iam_role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      },
-    ]
-  })
-
-  tags = {
-    Name = "jenkins_iam_role"
-  }
-}
-
-# IAM Policy Attachment for EKS Access
-resource "aws_iam_role_policy_attachment" "jenkins_eks_access" {
-  role       = aws_iam_role.jenkins_iam_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-}
-
-# IAM Policy Attachment for ECR Access
-resource "aws_iam_role_policy_attachment" "jenkins_ecr_access" {
-  role       = aws_iam_role.jenkins_iam_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
-}
-
-# IAM Policy Attachment for S3 Access (Optional)
-resource "aws_iam_role_policy_attachment" "jenkins_s3_access" {
-  role       = aws_iam_role.jenkins_iam_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-# Associate the IAM Role with the Jenkins Instance
-resource "aws_iam_instance_profile" "jenkins_instance_profile" {
-  name = "jenkins_instance_profile"
-  role = aws_iam_role.jenkins_iam_role.name
-}
-
-resource "aws_instance" "ci_cd_instance" {
-  ami                    = "ami-05134c8ef96964280"  # Use the appropriate Ubuntu AMI
-  instance_type          = "t3.large"
-  subnet_id              = aws_subnet.public_subnet_az1.id  # Replace with your subnet
-  vpc_security_group_ids = [aws_security_group.ci_cd_sg.id] # Use vpc_security_group_ids instead of security_group_ids
-  associate_public_ip_address = true
-
-  iam_instance_profile   = aws_iam_instance_profile.jenkins_instance_profile.name
-
-  tags = {
-    Name = "CI_CD_Server"
-  }
-}
-
-# EKS Worker Node Role
+# IAM Role for EKS Nodes
 resource "aws_iam_role" "eks_worker_role" {
   name = "eks_worker_role"
 
@@ -253,16 +186,12 @@ module "eks" {
       max_capacity     = 5
       min_capacity     = 2
 
-      instance_type = "t3.medium"
-      tags = {
+      instance_type   = "t3.medium"
+      additional_tags = {
         Name = "eks_nodes"
       }
 
-      # Additional user data script if needed
-      additional_userdata = <<-EOF
-        #!/bin/bash
-        # Custom user data script
-        EOF
+      additional_security_group_ids = [aws_security_group.eks_node_sg.id]
     }
   }
 
