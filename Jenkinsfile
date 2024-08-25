@@ -9,6 +9,19 @@ pipeline {
                 git branch: 'master', url: 'https://github.com/Phanendradant/Tours-and-travels-in-php.git'
             }
         }
+        stage('Install Composer') {
+            steps {
+                sh '''
+                if ! [ -x "$(command -v composer)" ]; then
+                  echo "Composer is not installed. Installing Composer..."
+                  curl -sS https://getcomposer.org/installer | php
+                  sudo mv composer.phar /usr/local/bin/composer
+                else
+                  echo "Composer is already installed."
+                fi
+                '''
+            }
+        }
         stage('Install Dependencies') {
             steps {
                 sh 'composer install'
