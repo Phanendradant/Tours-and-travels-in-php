@@ -39,6 +39,7 @@ pipeline {
                 sh '''
                 export KUBECONFIG=/path/to/your/kubeconfig
                 kubectl config view
+                kubectl get nodes
                 helm upgrade --install tours-travels-app ./mychart --set image.tag=latest
                 '''
             }
