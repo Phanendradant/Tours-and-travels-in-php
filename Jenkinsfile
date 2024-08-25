@@ -2,14 +2,13 @@ pipeline {
     agent any
     environment {
         AWS_REGION = 'us-west-2'
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
-        // KUBECONFIG = '/path/to/your/kubeconfig'  // Update this path to your actual kubeconfig
     }
     stages {
         stage('Setup Environment') {
             steps {
                 sh '''
+                sudo apt-get update
+                sudo apt-get install -y awscli
                 sudo usermod -aG docker jenkins
                 newgrp docker
                 '''
@@ -22,7 +21,7 @@ pipeline {
         }
         stage('Push to ECR') {
             steps {
-                withEnv(["AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                     sh '''
                     aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 605134427539.dkr.ecr.us-west-2.amazonaws.com
                     docker build -t tours-and-travels-in-php .
