@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWS_REGION = 'us-west-2'
-        KUBECONFIG = '/var/lib/jenkins/.kube/config' // Updated path to the kubeconfig
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
     }
     stages {
         stage('Setup Environment') {
@@ -37,7 +37,7 @@ pipeline {
         }
         stage('Deploy to EKS') {
             steps {
-                script {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                     sh '''
                     export KUBECONFIG=${KUBECONFIG}
                     kubectl config view
