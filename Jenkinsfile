@@ -6,30 +6,25 @@ pipeline {
     stages {
         stage('Setup Environment') {
             steps {
-                sh '''
-                # Add Jenkins user to the Docker group
-                sudo usermod -aG docker jenkins
-
-                # Restart Docker to apply the group changes
-                sudo systemctl restart docker
-                '''
+                script {
+                    // Ensure Jenkins user is part of the Docker group
+                    sh 'sudo usermod -aG docker jenkins || true'
+                    sh 'sudo systemctl restart docker || true'
+                }
             }
         }
         stage('Checkout Code') {
             steps {
-                // Checkout the latest code from your Git repository
                 git branch: 'master', url: 'https://github.com/Phanendradant/Tours-and-travels-in-php.git'
             }
         }
         stage('Build Docker Image') {
             steps {
-                // Build the Docker image using the Dockerfile
                 sh 'docker build -t tours-travels-app .'
             }
         }
         stage('Run Unit Tests') {
             steps {
-                // Run the unit tests inside the Docker container
                 sh 'docker run --rm tours-travels-app composer install'
                 sh 'docker run --rm tours-travels-app phpunit --configuration phpunit.xml'
             }
@@ -37,7 +32,6 @@ pipeline {
         stage('Push Docker Image to ECR') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
-                    // Tag and push the Docker image to Amazon ECR
                     sh '''
                     aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin 605134427539.dkr.ecr.us-west-2.amazonaws.com
                     docker tag tours-travels-app:latest 605134427539.dkr.ecr.us-west-2.amazonaws.com/tours-travels-app:latest
