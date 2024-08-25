@@ -196,8 +196,7 @@ resource "aws_instance" "ci_cd_instance" {
   }
 }
 
-# Existing EKS Role and Cluster Setup
-
+# EKS Worker Node Role
 resource "aws_iam_role" "eks_worker_role" {
   name = "eks_worker_role"
 
@@ -260,4 +259,37 @@ module "eks" {
   ]
 
   tags = {
-    Environment
+    Environment = "production"
+    Project     = "my-project"
+  }
+}
+
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.main.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.main.token
+}
+
+data "aws_eks_cluster" "main" {
+  name = module.eks.cluster_id
+}
+
+data "aws_eks_cluster_auth" "main" {
+  name = module.eks.cluster_id
+}
+
+# ECR Repository
+resource "aws_ecr_repository" "tours_and_travels" {
+  name                 = "tours-and-travels-in-php"
+  image_tag_mutability = "MUTABLE"
+
+  tags = {
+    Name        = "tours-and-travels-in-php"
+    Environment = "production"
+  }
+}
+
+output "ecr_repository_url" {
+  value       = aws_ecr_repository.tours_and_travels.repository_url
+  description = "URL of the ECR repository"
+}
