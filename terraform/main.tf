@@ -233,7 +233,7 @@ resource "aws_iam_role_policy_attachment" "ec2_container_registry_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-# EKS Cluster Setup with Worker Groups
+# EKS Cluster Setup with Node Groups
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
   version         = "17.1.0"
@@ -247,16 +247,24 @@ module "eks" {
     aws_subnet.private_subnet_az2.id
   ]
 
-  worker_groups = [
-    {
-      name                 = "eks_nodes"
-      instance_type        = "t3.medium"
-      asg_desired_capacity = 3  # Increased desired capacity
-      asg_min_size         = 2  # Increased minimum size
-      asg_max_size         = 5  # Increased maximum size
-      iam_role_name        = aws_iam_role.eks_worker_role.name
+  node_groups = {
+    eks_nodes = {
+      desired_capacity = 3
+      max_capacity     = 5
+      min_capacity     = 2
+
+      instance_type = "t3.medium"
+      tags = {
+        Name = "eks_nodes"
+      }
+
+      # Additional user data script if needed
+      additional_userdata = <<-EOF
+        #!/bin/bash
+        # Custom user data script
+        EOF
     }
-  ]
+  }
 
   tags = {
     Environment = "production"
