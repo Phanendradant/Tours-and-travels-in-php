@@ -4,16 +4,18 @@ FROM php:7.4-apache
 # Set the working directory
 WORKDIR /var/www/html
 
-# Copy the composer.json and composer.lock files first, to avoid rebuilding layers if only dependencies change
-COPY composer.json composer.lock /var/www/html/
-
 # Install necessary PHP extensions and utilities
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
-    curl \
-    && docker-php-ext-install mysqli pdo pdo_mysql \
+    libxml2-dev \
+    libzip-dev \
+    zip \
+    && docker-php-ext-install mysqli pdo pdo_mysql dom zip \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Copy the composer.json and composer.lock files first, to avoid rebuilding layers if only dependencies change
+COPY composer.json composer.lock /var/www/html/
 
 # Install Composer dependencies including dev dependencies
 RUN composer install --no-dev --optimize-autoloader
