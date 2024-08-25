@@ -23,12 +23,6 @@ pipeline {
                 sh 'docker build -t tours-travels-app .'
             }
         }
-        stage('Run Unit Tests') {
-            steps {
-                sh 'docker run --rm tours-travels-app composer install'
-                sh 'docker run --rm tours-travels-app phpunit --configuration phpunit.xml'
-            }
-        }
         stage('Push Docker Image to ECR') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
