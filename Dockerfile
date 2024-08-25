@@ -4,8 +4,11 @@ FROM php:7.4-apache
 # Set the working directory
 WORKDIR /var/www/html
 
-# Copy the composer.json and composer.lock files first
-COPY composer.json composer.lock /var/www/html/
+# Copy the composer.json file first
+COPY composer.json /var/www/html/
+
+# Optionally copy the composer.lock file if it exists
+COPY composer.lock /var/www/html/ || true
 
 # Install necessary PHP extensions and utilities
 RUN apt-get update && apt-get install -y \
