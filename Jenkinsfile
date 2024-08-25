@@ -1,14 +1,10 @@
-
 pipeline {
-    agent {
-        label 'lightweight' // Use a lightweight node label if applicable
-    }
+    agent any // This allows Jenkins to use any available agent
     environment {
         AWS_REGION = 'us-west-2'
     }
     stages {
         stage('Checkout Code') {
-            agent { label 'docker' } // Use a node with Docker pre-installed
             steps {
                 git branch: 'main', url: 'https://github.com/Phanendradant/Tours-and-travels-in-php.git'
             }
@@ -40,24 +36,4 @@ pipeline {
             }
         }
         stage('Deploy to EKS') {
-            steps {
-                sh '''
-                export KUBECONFIG=/path/to/your/kubeconfig
-                kubectl config view
-                helm upgrade --install tours-travels-app ./mychart --set image.tag=latest
-                '''
-            }
-        }
-    }
-    post {
-        always {
-            cleanWs()
-        }
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed. Please check the logs.'
-        }
-    }
-}
+            
