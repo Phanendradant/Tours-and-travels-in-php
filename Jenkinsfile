@@ -6,7 +6,7 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-repo/tours-travels-app.git'
+                git branch: 'main', url: 'https://github.com/Phanendradant/Tours-and-travels-in-php.git'
             }
         }
         stage('Install Dependencies') {
