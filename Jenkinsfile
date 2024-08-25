@@ -4,16 +4,6 @@ pipeline {
         AWS_REGION = 'us-west-2'
     }
     stages {
-        stage('Setup Environment') {
-            steps {
-                sh '''
-                sudo apt-get update
-                sudo apt-get install -y awscli
-                sudo usermod -aG docker jenkins
-                newgrp docker
-                '''
-            }
-        }
         stage('Build') {
             steps {
                 sh 'docker build -t tours-travels-app .'
