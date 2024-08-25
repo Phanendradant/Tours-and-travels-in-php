@@ -22,6 +22,9 @@ RUN chown -R www-data:www-data /var/www/html \
 # Enable Apache mod_rewrite for pretty URLs
 RUN a2enmod rewrite
 
+# Install Composer dependencies
+RUN composer install --no-dev --optimize-autoloader
+
 # Expose port 80 to the outside world
 EXPOSE 80
 
