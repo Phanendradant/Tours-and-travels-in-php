@@ -6,48 +6,27 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
+                // Checkout the latest code from your Git repository
                 git branch: 'master', url: 'https://github.com/Phanendradant/Tours-and-travels-in-php.git'
-            }
-        }
-        stage('Install PHP and Composer') {
-            steps {
-                sh '''
-                if ! [ -x "$(command -v php)" ]; then
-                  echo "PHP is not installed. Installing PHP..."
-                  sudo apt-get update
-                  sudo apt-get install -y php-cli
-                else
-                  echo "PHP is already installed."
-                fi
-
-                if ! [ -x "$(command -v composer)" ]; then
-                  echo "Composer is not installed. Installing Composer..."
-                  curl -sS https://getcomposer.org/installer | php
-                  sudo mv composer.phar /usr/local/bin/composer
-                else
-                  echo "Composer is already installed."
-                fi
-                '''
-            }
-        }
-        stage('Install Dependencies') {
-            steps {
-                sh 'composer install'
-            }
-        }
-        stage('Run Unit Tests') {
-            steps {
-                sh 'phpunit --configuration phpunit.xml'
             }
         }
         stage('Build Docker Image') {
             steps {
+                // Build the Docker image using the Dockerfile
                 sh 'docker build -t tours-travels-app .'
+            }
+        }
+        stage('Run Unit Tests') {
+            steps {
+                // Run the unit tests inside the Docker container
+                sh 'docker run --rm tours-travels-app composer install'
+                sh 'docker run --rm tours-travels-app phpunit --configuration phpunit.xml'
             }
         }
         stage('Push Docker Image to ECR') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                    // Tag and push the Docker image to Amazon ECR
                     sh '''
                     aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin 605134427539.dkr.ecr.us-west-2.amazonaws.com
                     docker tag tours-travels-app:latest 605134427539.dkr.ecr.us-west-2.amazonaws.com/tours-travels-app:latest
