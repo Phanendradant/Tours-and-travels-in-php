@@ -38,7 +38,7 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 script {
-                    def kubeconfigPath = "/path/to/your/kubeconfig" // Ensure this is correct
+                    def kubeconfigPath = "/home/ubuntu/.kube/config" // Ensure this is correct
                     sh '''
                     export KUBECONFIG=${kubeconfigPath}
                     kubectl config view
