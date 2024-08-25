@@ -138,7 +138,7 @@ resource "aws_security_group" "ci_cd_sg" {
 
 resource "aws_instance" "ci_cd_instance" {
   ami                    = "ami-05134c8ef96964280"  # Use the appropriate Ubuntu AMI
-  instance_type          = "t3.medium"
+  instance_type          = "t3.large"
   subnet_id              = aws_subnet.public_subnet_az1.id  # Replace with your subnet
   vpc_security_group_ids = [aws_security_group.ci_cd_sg.id] # Use vpc_security_group_ids instead of security_group_ids
   associate_public_ip_address = true
