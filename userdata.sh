@@ -7,11 +7,25 @@ git clone https://github.com/Phanendradant/Tours-and-travels-in-php.git
 sudo apt-get update -y
 sudo apt-get upgrade -y
 
-# Install Docker
-curl -fsSL https://get.docker.com -o install-docker.sh
-sudo sh install-docker.sh
-sudo usermod -aG docker jenkins
+# AWS cli
+sudo apt-get update
+sudo apt-get install -y python3-pip
+pip3 install awscli --upgrade --user
+export PATH=~/.local/bin:$PATH
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
 
+
+# Install Docker
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get update -y
+sudo apt-get install -y docker-ce
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker ubuntu
 
 # Install kubectl
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -25,8 +39,7 @@ echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc]" \
   https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
   /etc/apt/sources.list.d/jenkins.list > /dev/null
 sudo apt-get update
-sudo apt-get install jenkins -y
-
+sudo apt-get install jenkins
 
 # Add Jenkins user to Docker group
 sudo usermod -aG docker jenkins
