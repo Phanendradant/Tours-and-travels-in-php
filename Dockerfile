@@ -4,8 +4,8 @@ FROM php:7.4-apache
 # Set the working directory
 WORKDIR /var/www/html
 
-# Copy the composer.json file first
-COPY composer.json /var/www/html/
+# Copy the composer.json and composer.lock files first
+COPY composer.json composer.lock /var/www/html/
 
 # Install necessary PHP extensions and utilities
 RUN apt-get update && apt-get install -y \
@@ -17,6 +17,10 @@ RUN apt-get update && apt-get install -y \
 
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
+
+# Install PHPUnit globally
+RUN composer global require phpunit/phpunit --prefer-dist --no-progress --no-suggest && \
+    ln -s /root/.composer/vendor/bin/phpunit /usr/local/bin/phpunit
 
 # Copy the rest of the application files
 COPY . /var/www/html
