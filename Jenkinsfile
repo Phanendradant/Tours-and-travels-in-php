@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWS_REGION = 'us-west-2'
-        KUBECONFIG = '/path/to/your/kubeconfig' // Make sure this path is correct
+        KUBECONFIG = '/home/ubuntu/.kube/config' // Replace with the correct path to your kubeconfig
     }
     stages {
         stage('Setup Environment') {
@@ -38,7 +38,7 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 script {
-                    def kubeconfigPath = "/home/ubuntu/.kube/config" // Ensure this is correct
+                    def kubeconfigPath = "/home/ubuntu/.kube/config" // Ensure this is correct and accessible
                     sh '''
                     export KUBECONFIG=${kubeconfigPath}
                     kubectl config view
