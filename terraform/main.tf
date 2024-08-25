@@ -136,6 +136,52 @@ resource "aws_security_group" "ci_cd_sg" {
   }
 }
 
+# IAM Role for Jenkins Instance
+resource "aws_iam_role" "jenkins_iam_role" {
+  name = "jenkins_iam_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+
+  tags = {
+    Name = "jenkins_iam_role"
+  }
+}
+
+# IAM Policy Attachment for EKS Access
+resource "aws_iam_role_policy_attachment" "jenkins_eks_access" {
+  role       = aws_iam_role.jenkins_iam_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+# IAM Policy Attachment for ECR Access
+resource "aws_iam_role_policy_attachment" "jenkins_ecr_access" {
+  role       = aws_iam_role.jenkins_iam_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+}
+
+# IAM Policy Attachment for S3 Access (Optional)
+resource "aws_iam_role_policy_attachment" "jenkins_s3_access" {
+  role       = aws_iam_role.jenkins_iam_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+# Associate the IAM Role with the Jenkins Instance
+resource "aws_iam_instance_profile" "jenkins_instance_profile" {
+  name = "jenkins_instance_profile"
+  role = aws_iam_role.jenkins_iam_role.name
+}
+
 resource "aws_instance" "ci_cd_instance" {
   ami                    = "ami-05134c8ef96964280"  # Use the appropriate Ubuntu AMI
   instance_type          = "t3.large"
@@ -143,10 +189,14 @@ resource "aws_instance" "ci_cd_instance" {
   vpc_security_group_ids = [aws_security_group.ci_cd_sg.id] # Use vpc_security_group_ids instead of security_group_ids
   associate_public_ip_address = true
 
+  iam_instance_profile   = aws_iam_instance_profile.jenkins_instance_profile.name
+
   tags = {
     Name = "CI_CD_Server"
   }
 }
+
+# Existing EKS Role and Cluster Setup
 
 resource "aws_iam_role" "eks_worker_role" {
   name = "eks_worker_role"
@@ -210,37 +260,4 @@ module "eks" {
   ]
 
   tags = {
-    Environment = "production"
-    Project     = "my-project"
-  }
-}
-
-provider "kubernetes" {
-  host                   = data.aws_eks_cluster.main.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.main.token
-}
-
-data "aws_eks_cluster" "main" {
-  name = module.eks.cluster_id
-}
-
-data "aws_eks_cluster_auth" "main" {
-  name = module.eks.cluster_id
-}
-
-# ECR Repository
-resource "aws_ecr_repository" "tours_and_travels" {
-  name                 = "tours-and-travels-in-php"
-  image_tag_mutability = "MUTABLE"
-
-  tags = {
-    Name        = "tours-and-travels-in-php"
-    Environment = "production"
-  }
-}
-
-output "ecr_repository_url" {
-  value       = aws_ecr_repository.tours_and_travels.repository_url
-  description = "URL of the ECR repository"
-}
+    Environment
