@@ -251,9 +251,9 @@ module "eks" {
     {
       name                 = "eks_nodes"
       instance_type        = "t3.medium"
-      asg_desired_capacity = 2
-      asg_min_size         = 1
-      asg_max_size         = 3
+      asg_desired_capacity = 3  # Increased desired capacity
+      asg_min_size         = 2  # Increased minimum size
+      asg_max_size         = 5  # Increased maximum size
       iam_role_name        = aws_iam_role.eks_worker_role.name
     }
   ]
