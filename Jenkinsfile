@@ -1,3 +1,4 @@
+
 pipeline {
     agent {
         label 'lightweight' // Use a lightweight node label if applicable
@@ -6,11 +7,6 @@ pipeline {
         AWS_REGION = 'us-west-2'
     }
     stages {
-        stage('Preparation') {
-            steps {
-                echo 'Checking resources and preparing the environment...'
-            }
-        }
         stage('Checkout Code') {
             agent { label 'docker' } // Use a node with Docker pre-installed
             steps {
