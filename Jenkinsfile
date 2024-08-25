@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWS_REGION = 'us-west-2'
-        KUBECONFIG = '/home/ubuntu/.kube/config' // Ensure this path is correct and accessible
+        KUBECONFIG = '/var/lib/jenkins/.kube/config' // Updated path to the kubeconfig
     }
     stages {
         stage('Setup Environment') {
