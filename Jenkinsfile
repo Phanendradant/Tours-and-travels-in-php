@@ -7,6 +7,14 @@ pipeline {
         // KUBECONFIG = '/path/to/your/kubeconfig'  // Update this path to your actual kubeconfig
     }
     stages {
+        stage('Setup Environment') {
+            steps {
+                sh '''
+                sudo usermod -aG docker jenkins
+                newgrp docker
+                '''
+            }
+        }
         stage('Build') {
             steps {
                 sh 'docker build -t tours-travels-app .'
