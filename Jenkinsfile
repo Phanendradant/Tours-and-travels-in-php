@@ -4,6 +4,17 @@ pipeline {
         AWS_REGION = 'us-west-2'
     }
     stages {
+        stage('Setup Environment') {
+            steps {
+                sh '''
+                # Add Jenkins user to the Docker group
+                sudo usermod -aG docker jenkins
+
+                # Restart Docker to apply the group changes
+                sudo systemctl restart docker
+                '''
+            }
+        }
         stage('Checkout Code') {
             steps {
                 // Checkout the latest code from your Git repository
