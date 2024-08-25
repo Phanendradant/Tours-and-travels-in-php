@@ -4,22 +4,15 @@ FROM php:7.4-apache
 # Set the working directory
 WORKDIR /var/www/html
 
-# Copy the composer.json and composer.lock files first
-COPY composer.json composer.lock /var/www/html/
+# Copy the application code
+COPY . /var/www/html
 
 # Install necessary PHP extensions and utilities
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     curl \
-    && docker-php-ext-install mysqli pdo pdo_mysql \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Install Composer dependencies
-RUN composer install --no-dev --optimize-autoloader
-
-# Copy the rest of the application code
-COPY . /var/www/html
+    && docker-php-ext-install mysqli pdo pdo_mysql
 
 # Set appropriate permissions for the web server
 RUN chown -R www-data:www-data /var/www/html \
